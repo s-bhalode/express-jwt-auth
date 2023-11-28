@@ -1,6 +1,9 @@
 const User = require('../model/user.model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const upload = require('../middleware/upload');
+const express = require('express');
+const router = new express.Router();
 
 const signup = async (req, res) => {
     try{
@@ -66,6 +69,7 @@ const signin = async (req, res) => {
 }
 
 const uploadSingleFile = async (req, res) => {
+    console.log("uploading single file");
     try{
         return res.send({
             data: req.file,
@@ -89,9 +93,25 @@ const uploadMultipleFiles = async (req, res) => {
     }
 }
 
+const uploadFile = async (req, res) => {
+    try{
+        const key = req.file.originalName;
+        const url = await upload.createPresignedUrlWithClient(process.env.AWS_BUCKET_REGION, process.env.AWS_BUCKET_NAME, key);
+        console.log(url);
+
+        await router.post(url, uploadSingleFile);
+        return res.ok();
+
+    }catch(err){
+        console.log(err);
+        return res.status(500).json(err.message);
+    }
+}
+
 module.exports = {
     signup,
     signin,
     uploadSingleFile,
-    uploadMultipleFiles
+    uploadMultipleFiles,
+    uploadFile
 }
